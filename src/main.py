@@ -2,32 +2,34 @@ import json
 import os
 import sys
 
+from persistency import Persistency
 from youtube_api import get_youtube_videos
 
 
 def main():
     verify_variables()
-    videos = get_videos_web("../channels.txt")
-    print('{} videos were scrapped from the web'.format(len(videos)))
+    process_videos("../channels.txt")
 
 
-def get_videos_web(channels_file_name):
+def process_videos(channels_file_name):
     videos = []
+    persistency = Persistency(os.environ.get('sheet_id'))
+
     with open('../output_video_log.txt', 'a') as output:
         log(output, 'Begining to parse youtube videos\n')
         """Get a list of objects representing youtube videos."""
 
         channels_id = get_channels_id(channels_file_name)
         for channel_id in channels_id:
-
-            channel_videos = []  # get_youtube_videos(channel_id)
-            # videos.extend(channel_videos)
+            log(output, "Processing channel {}".format(channel_id))
+            channel_videos = get_youtube_videos(channel_id)
+            for video in channel_videos:
+                persistency.save_video(video)
 
             log(output, '[{}] a total of {} videos were processed for the channel.\n'.format(
                 channel_id, len(channel_videos)))
         log(output, 'Complete, {} youtube channels were parsed resulting in {} videos\n'.format(
             len(channels_id), len(videos)))
-    return videos
 
 
 def log(output, message):

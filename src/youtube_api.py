@@ -14,14 +14,23 @@ class YTVideo():
         self.video_id = video_id
         self.channel_id = channel_id
         snippet = self.__get_stats_video(video_id)
-
         self.title = snippet['title']
         self.publish_date = snippet['publishedAt']
         self.description = snippet['description']
-        self.thumbnail = snippet['thumbnails']['medium']
+        self.thumbnail = snippet['thumbnails']['medium']['url']
         self.category = snippet['categoryId']
-        self.audio_language = snippet['defaultAudioLanguage']
         self.tags = snippet['tags'] if 'tags' in snippet else []
+
+        if 'defaultAudioLanguage' in snippet:
+            self.language = snippet['defaultAudioLanguage']
+        elif 'defaultAudioLanguage' in snippet:
+            self.language = snippet['defaultLanguage']
+        else:
+            self.language = 'ND'
+
+    def to_list(self):
+        tags = ';'.join(self.tags)
+        return [self.video_id, self.title, self.views, self.likes, self.dislikes, self.comments, self.thumbnail, self.publish_date, self.category, self.language, self.channel_id, tags]
 
     def __get_stats_video(self, video_id):
         """ get the statistics for a given video videos from youtube"""
@@ -56,4 +65,4 @@ def __get_id_upload_playlist(channel_id):
     """ get the id from the playlist containing all videos of a channel """
     response = requests.get(
         'https://www.googleapis.com/youtube/v3/channels?key={}&part=contentDetails&id={}'.format(youtube_api_key, channel_id))
-    return response.json()['items']['contentDetails']['uploads']
+    return response.json()['items'][0]['contentDetails']['relatedPlaylists']['uploads']

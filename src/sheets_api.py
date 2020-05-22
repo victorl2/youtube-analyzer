@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import os.path
 import pickle
 
@@ -7,18 +5,17 @@ from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-spreadsheet_id = '1PrnugvoV5hTwHl4Oi6PC-AySKTjvVJc2OBRHuuYVdps'
-
 
 class SheetsAPI():
     def __init__(self, sheet_id):
+        self.sheet_id = sheet_id
         self.credentials = self.__get_credentials()
         self.service = build('sheets', 'v4', credentials=self.credentials)
 
     def __send_request(self, body):
         """Send a request to the googlespreadsheet's title."""
         response = self.service.spreadsheets().batchUpdate(
-            spreadsheetId=spreadsheet_id, body=body).execute()
+            spreadsheetId=self.sheet_id, body=body).execute()
 
     def __get_credentials(self):
         # The file token.pickle stores the user's access and refresh tokens, and is
@@ -49,7 +46,11 @@ class SheetsAPI():
             column_name, row_number) + ":" + self.__get_range(column_name_target, row_number)
 
         result = self.service.spreadsheets().values().get(
-            spreadsheetId=spreadsheet_id, range=range).execute()
+            spreadsheetId=self.sheet_id, range=range).execute()
+
+        if result.get('values') is None:
+            return [] if column_name_target is not None else None
+
         return result.get('values')[0] if column_name_target is not None else result.get('values')[0][0]
 
     def __get_range(self, column_name, row_number):
@@ -64,7 +65,7 @@ class SheetsAPI():
         }
 
         result = self.service.spreadsheets().values().update(
-            range=cell_position, valueInputOption='RAW', spreadsheetId=spreadsheet_id, body=body).execute()
+            range=cell_position, valueInputOption='RAW', spreadsheetId=self.sheet_id, body=body).execute()
         print('{0} cells updated.'.format(result.get('updatedCells')))
 
     def set_row(self, column_name, row_number, *values):
@@ -92,6 +93,6 @@ class SheetsAPI():
 
 
 if __name__ == '__main__':
-    api = SheetsAPI(spreadsheet_id)
+    api = SheetsAPI(os.environ.get('sheet_id'))
     print(api.read_value_row('A', 1, 'L'))
     print("API Called")
