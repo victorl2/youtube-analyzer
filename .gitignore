@@ -1,6 +1,8 @@
 #Custom project config
 credentials.json
 **/token.pickle
+channels.txt
+**/output_video_log.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
