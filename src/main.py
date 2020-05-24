@@ -1,9 +1,11 @@
 import json
 import os
 import sys
+import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from persistency import Persistency
-from youtube_api import get_youtube_videos
+from youtube_api import get_list_id_videos, get_youtube_video
 
 
 def main():
@@ -14,27 +16,55 @@ def main():
 def process_videos(channels_file_name):
     videos = []
     persistency = Persistency(os.environ.get('sheet_id'))
+    channels_id = get_channels_id(channels_file_name)
 
-    with open('../output_video_log.txt', 'a') as output:
-        log(output, 'Begining to parse youtube videos\n')
-        """Get a list of objects representing youtube videos."""
+    log('Begining to parse youtube videos\n')
 
-        channels_id = get_channels_id(channels_file_name)
-        for channel_id in channels_id:
-            log(output, "Processing channel {}".format(channel_id))
-            channel_videos = get_youtube_videos(channel_id)
-            for video in channel_videos:
-                persistency.save_video(video)
+    for channel_id in channels_id:
+        videos.extend(save_videos_youtube_channel(channel_id, persistency))
 
-            log(output, '[{}] a total of {} videos were processed for the channel.\n'.format(
-                channel_id, len(channel_videos)))
-        log(output, 'Complete, {} youtube channels were parsed resulting in {} videos\n'.format(
-            len(channels_id), len(videos)))
+    log('Complete!! {} youtube channels were parsed resulting in {} videos\n'.format(
+        len(channels_id), len(videos)))
 
 
-def log(output, message):
+def save_videos_youtube_channel(channel_id, persistency, output=None):
+    log("Reading videos from channel {}".format(channel_id))
+
+    id_videos = [video_id for video_id in get_list_id_videos(
+        channel_id) if not persistency.is_video_saved(video_id)]
+    log('\n{} videos to be processed for the channel\n'.format(len(id_videos)))
+
+    videos = []
+    processed_videos = []
+
+    while len(id_videos) > 0:
+        ids_to_process = id_videos[:120]
+        id_videos = id_videos[120:]
+
+        start_time = time.time()
+        with ProcessPoolExecutor(max_workers=6) as executor:
+            videos = [v for v in executor.map(
+                get_youtube_video, ids_to_process) if v is not None]
+
+        execution_time = time.time() - start_time
+        log('{} videos parsed in {} seconds'.format(
+            len(videos), execution_time))
+
+        start_time = time.time()
+        persistency.batch_save_videos(videos)
+        execution_time = time.time() - start_time
+        log('{} seconds to save {} videos'.format(execution_time, len(videos)))
+
+        processed_videos.extend(videos)
+        videos.clear()
+
+    log('[{}] a total of {} videos were processed for the channel.\n'.format(
+        channel_id, len(processed_videos)))
+    return processed_videos
+
+
+def log(message):
     print(message)
-    output.write(message)
 
 
 def get_channels_id(channels_file_name):

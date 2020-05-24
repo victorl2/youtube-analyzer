@@ -57,26 +57,63 @@ class SheetsAPI():
         """Get the range of one or more cells inside the spreadsheet."""
         return column_name + str(row_number)
 
-    def set_value(self, column_name, row_number, new_value):
+    def write_value(self, column_name, row_number, new_value):
         """Set the value for a given cell in the spreadsheet."""
         cell_position = self.__get_range(column_name, row_number)
         body = {
-            'values': [new_value if isinstance(new_value, list) else [new_value]]
+            'values': [[new_value]]
         }
-
         result = self.service.spreadsheets().values().update(
             range=cell_position, valueInputOption='RAW', spreadsheetId=self.sheet_id, body=body).execute()
         print('{0} cells updated.'.format(result.get('updatedCells')))
 
-    def set_row(self, column_name, row_number, *values):
-        """Set a row of values starting in a given cell inside the spreadsheet."""
-        self.set_value(column_name, row_number, [value for value in values])
+    def write_row(self, column_name, row_number, *values):
+        """Write a row of values starting in a given cell inside the spreadsheet."""
+        cell_position = self.__get_range(column_name, row_number)
+        body = {
+            'values': [[value for value in values]]
+        }
+        result = self.service.spreadsheets().values().update(
+            range=cell_position, valueInputOption='RAW', spreadsheetId=self.sheet_id, body=body).execute()
+        print('{0} cells updated.'.format(result.get('updatedCells')))
+
+    def batch_write_rows(self, column_name, start_row_number, array_values):
+        """write a collection of rows starting in a given cell inside the spreadsheet."""
+        cell_position = self.__get_range(column_name, start_row_number)
+        values_sent = array_values[:300]
+        body = {
+            'values': values_sent
+        }
+
+        result = self.service.spreadsheets().values().update(
+            range=cell_position, valueInputOption='RAW', spreadsheetId=self.sheet_id, body=body).execute()
+        print('{} videos transmited to google sheets'.format(len(values_sent)))
+        if len(values_sent) > 300:
+            batch_write_rows(column_name, start_row_number, values_sent)
 
     def read_value_single_cell(self, column_name, row_number):
-        return self.__read_value(column_name, row_number)
+        """get the value from a single cell inside the spreadsheet."""
+        range = self.__get_range(column_name, row_number)
+        result = self.service.spreadsheets().values().get(
+            spreadsheetId=self.sheet_id, range=range).execute()
+        return result.get('values')[0][0]
 
     def read_value_row(self, column_name, row_number, target_column_name):
-        return self.__read_value(column_name, row_number, target_column_name)
+        """get the value from single row inside the spreadsheet."""
+        range = self.__get_range(column_name, row_number) + \
+            ':' + self.__get_range(target_column_name, row_number)
+        result = self.service.spreadsheets().values().get(
+            spreadsheetId=self.sheet_id, range=range).execute()
+        return result.get('values')[0]
+
+    def read_value_rows(self, column_name, row_number, target_column_name):
+        """get the value from a many rows inside the spreadsheet."""
+        range = self.__get_range(
+            column_name, row_number) + ':' + target_column_name
+        result = self.service.spreadsheets().values().get(
+            spreadsheetId=self.sheet_id, range=range).execute()
+
+        return result.get('values')
 
     def update_title(self,  new_title):
         """Change the spreadsheet's title."""
@@ -94,5 +131,9 @@ class SheetsAPI():
 
 if __name__ == '__main__':
     api = SheetsAPI(os.environ.get('sheet_id'))
-    print(api.read_value_row('A', 1, 'L'))
+
+    values = api.read_value_rows('A', 2, 'L')
+
+    print(len(values))
+    print(values)
     print("API Called")
