@@ -27,7 +27,6 @@ class Persistency():
         filtered_videos = [
             video for video in videos if video.video_id not in self.id_videos]
         if(len(filtered_videos) > 0):
-            print("Sending {} videos to google sheets".format(len(filtered_videos)))
             list_content = [video.to_list() for video in filtered_videos]
             self.sheets_api.batch_write_rows(
                 'A', self.last_empty_row, list_content)

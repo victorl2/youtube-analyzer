@@ -10,7 +10,7 @@ from youtube_api import get_list_id_videos, get_youtube_video
 
 def main():
     verify_variables()
-    process_videos("../channels.txt")
+    process_videos("../../channels.txt")
 
 
 def process_videos(channels_file_name):
@@ -53,7 +53,7 @@ def save_videos_youtube_channel(channel_id, persistency, output=None):
         start_time = time.time()
         persistency.batch_save_videos(videos)
         execution_time = time.time() - start_time
-        log('{} seconds to save {} videos'.format(execution_time, len(videos)))
+        log('{} seconds to save {} videos\n'.format(execution_time, len(videos)))
 
         processed_videos.extend(videos)
         videos.clear()
