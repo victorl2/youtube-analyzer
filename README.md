@@ -17,14 +17,3 @@ The youtube hit analyzer is a set of micro-apps working together to understand w
 + Dataset creation with the video data
 + Labeling of hit videos
 + A Classifier of new videos with neural nets
-
-
-## How to use
-You can run the application inside a Docker container to simplify the installation requirements. To run **with docker** you need:
-
-+ Install [docker in your machine](https://docs.docker.com/get-docker/) 
-+ [Create a youtube api key](https://developers.google.com/youtube/v3/getting-started)
-+ [Enable access to google sheets api](https://developers.google.com/sheets/api/quickstart/python)
-+ Clone the project repository in your machine
-+ Go to the root folder in the youtube-analyzer project and copy the `credentials.json` containing information about your [**google sheets api**](https://developers.google.com/sheets/api/guides/authorizing).
-+ Run the commands: `docker build -t yt-analyzer` and `docker run yt-analyzer -e 'YOUTUBE-API-KEY'`
